@@ -1,0 +1,6 @@
+name: Named Include Inner Title
+items:
+  - name: Named Include Item 1
+    href: named-include-1.md
+  - name: Named Include Item 2
+    href: named-include-2.md

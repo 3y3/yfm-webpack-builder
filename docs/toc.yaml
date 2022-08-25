@@ -1,0 +1,26 @@
+title: Документация {{ project-name }}
+href: index.yaml
+items:
+  - name: API {{ project-name }}
+    href: api/index.yaml
+    items:
+      - name: arch
+        href: api/arch/index.md
+      - name: gateway
+        href: api/gateway/index.md
+  - name: Named Include ({{ lang }})
+    include:
+      path: _includes/named-include.yaml
+  - include:
+      path: _includes/inline-include.yaml
+  - name: Link Include
+    include:
+      mode: link
+      path: _includes/linked/link-include.yaml
+  - name: Merge Include
+    when: lang == "ru"
+    include:
+      mode: merge
+      path: _includes/merged/merge-include.yaml
+  - name: Pricing {{ project-name }}
+    href: pricing/index.md

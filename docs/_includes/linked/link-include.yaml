@@ -1,0 +1,6 @@
+name: Link Include Inner Title
+items:
+  - name: Link Include Item 1
+    href: link-include-1.md
+  - name: Link Include Item 2
+    href: link-include-2.md

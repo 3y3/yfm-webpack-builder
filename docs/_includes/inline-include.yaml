@@ -1,0 +1,6 @@
+name: Inline Include Inner Title
+items:
+  - name: Inline Include Item 1
+    href: inline-include-1.md
+  - name: Inline Include Item 2
+    href: inline-include-2.md

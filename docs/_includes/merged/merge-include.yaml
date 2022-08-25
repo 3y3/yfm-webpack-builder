@@ -1,0 +1,6 @@
+name: Merge Include Inner Title
+items:
+  - name: Merge Include Item 1
+    href: merge-include-1.md
+  - name: Merge Include Item 2
+    href: merge-include-2.md

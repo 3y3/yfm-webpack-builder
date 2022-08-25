@@ -1,0 +1,21 @@
+{
+  "extends": "@yandex-cloud/tsconfig/tsconfig",
+  "compilerOptions": {
+    "lib": ["DOM", "ES6"],
+    "jsx": "react",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "declaration": true,
+    "isolatedModules": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "target": "ES6",
+    "types": [
+      "node"
+    ]
+  },
+  "ts-node": {
+    "files": true
+  }
+}

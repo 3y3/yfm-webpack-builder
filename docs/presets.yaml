@@ -1,0 +1,4 @@
+default:
+  region: ru
+  lang: ru
+  project-name: Test Project

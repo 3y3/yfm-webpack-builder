@@ -1,0 +1,11 @@
+title: Документация Yandex Cloud
+meta:
+  title: Yandex Cloud
+  noIndex: true
+links:
+  - title: API Yandex Cloud
+    description: Архитектура API Yandex Cloud
+    href: api-design-guide/
+  - title: API Gateway
+    description: Интеграция с сервисами Yandex Cloud при помощи API
+    href: api-gateway/

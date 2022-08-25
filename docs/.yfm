@@ -1,0 +1,8 @@
+allowHTML: true
+supportGithubAnchors: true
+connector:
+    type: github
+    github: 
+        endpoint: https://api.github.com
+        owner: yandex-cloud
+        repo: docs

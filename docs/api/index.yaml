@@ -1,0 +1,11 @@
+title: API
+meta:
+  title: Main API
+  noIndex: true
+links:
+  - title: Architecture
+    description: Архитектура API Yandex Cloud
+    href: arch/
+  - title: Gateway
+    description: Интеграция с сервисами Yandex Cloud при помощи API
+    href: gateway/
