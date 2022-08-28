@@ -1,0 +1,12 @@
+title: Подпроект документации {{ project-name }}
+href: index.yaml
+items:
+  - name: README {{ project-name }}
+    href: readme/index.yaml
+    items:
+      - name: one
+        href: readme/one.md
+      - name: two
+        href: readme/two.md
+      - include:
+        path: _includes/inline-include.yaml

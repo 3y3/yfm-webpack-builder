@@ -6,7 +6,7 @@ export function uniq(items: string[]) {
 }
 
 export function isEmpty(target: any) {
-    return typeof target === 'undefined' || !Boolean(target);
+    return target === undefined || target === null;
 }
 
 export function isObject(target: any): target is Object {

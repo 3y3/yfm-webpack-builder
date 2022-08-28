@@ -3,7 +3,7 @@ There header must be with overriden local lang.
 
 ![File](1)
 
-![File](../../_images/image.jpg "title" 100x200)
+![File](../../_images/image.jpg "title" "100x200")
 
 ![File](file:///Users/3y3k0/doctools/webpack-builder/docs/_images/image.jpg)
 

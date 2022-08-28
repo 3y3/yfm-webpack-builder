@@ -8,6 +8,19 @@ import { resolve, relative } from 'path';
 import { isEmpty, isObject, isArray } from '../../utils';
 import { isNode } from './unist';
 
+const Ast = Symbol('Ast');
+const Meta = Symbol('Meta');
+const Parser = Symbol('Parser');
+const Compiler = Symbol('Compiler');
+
+const hidden = (box: Record<symbol | string, any>, key: symbol, ...args: any[]) => {
+    if (args.length) {
+        box[key] = args[0];
+    } else {
+        return box[key];
+    }
+};
+
 export async function exists(ctx: LoaderContext<any>, path: string) {
     return new Promise((resolve) => {
         ctx.fs.stat(path, (error, stat) => {
@@ -37,7 +50,16 @@ export function loadModuleAst<T extends Node = Node>(
     path: string
 ): Promise<T> {
     return loadModule<T>(ctx, path, (_content: any, _map: any, module: NormalModule) => {
-        return getModuleAst(module) as T;
+        return hidden(module, Ast) as T;
+    });
+}
+
+export function loadModuleMeta<T extends Record<string | symbol, any>>(
+    ctx: LoaderContext<any>,
+    path: string
+): Promise<T> {
+    return loadModule<T>(ctx, path, (_content: any, _map: any, module: NormalModule) => {
+        return hidden(module, Meta) as T;
     });
 }
 
@@ -73,25 +95,12 @@ type AstLoaderCallback<Options, Result, AtsRoot = Node> = (
     scope: {
         content: Node | string,
         ast: AtsRoot;
+        meta: Record<string | symbol, any>;
         processor: Processor;
         parser: Processor;
         compiler: ExtendableProcessor
     }
 ) => Promise<Result> | Result;
-
-const Ast = Symbol('Ast');
-const Parser = Symbol('Parser');
-const Compiler = Symbol('Compiler');
-
-function setModuleAst(module: Record<string | symbol, any> | undefined, ast: Node) {
-    if (module) {
-        module[Ast] = ast;
-    }
-}
-
-function getModuleAst(module: Record<string | symbol, any> | undefined): Node | undefined {
-    return module && module[Ast];
-}
 
 export function asyncAstLoader<Options extends Record<string, any> = any,
     AtsRoot extends Node = Node,
@@ -99,37 +108,33 @@ export function asyncAstLoader<Options extends Record<string, any> = any,
     return asyncLoader(async function(content, _map: any, meta) {
         meta = meta || {};
 
-        const ast = meta[Ast];
+        let ast = meta[Ast];
         const parser = meta[Parser] || withHandlers(unified());
         const compiler = meta[Compiler] || withHandlers(unified());
         const processor = unified();
 
-        const result = await loader.call(this, { content, ast, parser, compiler, processor });
+        const result = await loader.call(this, { content, ast, meta, parser, compiler, processor });
 
-        setModuleAst(this._module, isNode(result) ? result : ast);
+        ast = isNode(result) ? result : ast;
+
+        hidden(this._module as NormalModule, Ast, ast);
+        hidden(this._module as NormalModule, Meta, meta);
+        hidden(meta, Ast, ast);
+        hidden(meta, Parser, parser);
+        hidden(meta, Compiler, compiler);
 
         if (this.loaderIndex === 0) {
-            content = isEmpty(result)
+            content = isEmpty(result) || isNode(result)
                 ? compiler.stringify(await compiler.run(ast))
-                : isNode(result)
-                    ? compiler.stringify(await compiler.run(result))
-                    : isObject(result)
-                        ? JSON.stringify(result)
-                        : String(result);
-
-            return [ content, null, meta ];
+                : isObject(result)
+                    ? JSON.stringify(result)
+                    : String(result);
         } else {
-            return [
-                // For best caching we return string content in common case
-                isEmpty(result) ? content : result,
-                null,
-                Object.assign(meta, {
-                    [Ast]: isNode(result) ? result : ast,
-                    [Parser]: parser,
-                    [Compiler]: compiler
-                })
-            ];
+            // For best caching we return string content in common case
+            content = isEmpty(result) ? content : String(result);
         }
+
+        return [ content, null, meta ];
     } as Loader<Options, Node | string>);
 }
 

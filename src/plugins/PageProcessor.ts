@@ -1,5 +1,7 @@
 import type { Compilation, Compiler } from 'webpack';
 import VirtualModulesPlugin from 'webpack-virtual-modules';
+import glob from 'glob';
+import { dirname, join } from 'path';
 
 const PagePlaceholder = Symbol('Page');
 
@@ -32,24 +34,40 @@ export class PageProcessor {
     apply(compiler: Compiler) {
         this.modules.apply(compiler);
 
+        const tocs = glob.sync('**/toc.yaml', { cwd: compiler.options.context, nodir: true });
+
+        const entries = tocs.reduce((entries, toc) => {
+            const dir = dirname(toc);
+            const entry = './' + join(dir, 'page');
+
+            entries[entry] = { import: [ entry + '.js' ] };
+
+            return entries;
+        }, {} as Record<string, any>);
+
+        console.log(entries);
+
         compiler.hooks.environment.tap(this.name, () => {
-            Object.assign(compiler.options.entry, {
-                page: { import: [ './page.js' ] }
-            });
+            Object.assign(compiler.options.entry, entries);
         });
 
         compiler.hooks.compilation.tap(this.name, () => {
-            this.modules.writeModule('./page.js', `
-                window.__DATA__ = window.__DATA__ || {};
-                window.__DATA__.toc = require('./toc.yaml');
-                window.__PLUGINS__ = require('./plugins.js');
-            `);
+            Object.keys(entries).forEach(key => {
+                const dir = dirname(key);
+                const plugins = './' + join(dir, 'plugins.js');
 
-            this.modules.writeModule('./plugins.js', `
-                export default {
-                
-                };
-            `);
+                this.modules.writeModule(key + '.js', `
+                    window.__DATA__ = window.__DATA__ || {};
+                    window.__DATA__.toc = require('./toc.yaml');
+                    window.__PLUGINS__ = require('./plugins.js');
+                `);
+
+                this.modules.writeModule(plugins, `
+                    export default {
+                    
+                    };
+                `);
+            });
         });
 
         compiler.hooks.thisCompilation.tap(this.name, (compilation) => {

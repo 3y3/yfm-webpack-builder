@@ -6,14 +6,14 @@ import { parseQuery } from "./src/utils";
 import { Configuration } from "webpack";
 
 const options = {
-    input: './docs',
-    outputFormat: 'html',
+    input: '../docs',
+    outputFormat: 'md',
     ignoreStage: 'test',
-    applyPresets: false,
+    applyPresets: true,
     removeHiddenItems: false,
     supportGithubAnchors: true,
     vars: {
-        lang: 'be'
+        // lang: 'be'
     }
 };
 
@@ -63,6 +63,7 @@ export default {
                 enforce: 'pre',
                 use: useful([
                     l('md-ast'),
+                    l('mdast-image-size'),
                     applyPresets && l('liquid-loader', {
                         conditions: false,
                         substitutions: true,
@@ -75,7 +76,7 @@ export default {
                 oneOf: [
                     {
                         resourceQuery: /info/,
-                        use: l('md-info'),
+                        use: l('md-info-title'),
                     },
                     {
                         use: useful([
@@ -85,6 +86,7 @@ export default {
                             l('md-handle-assets'),
                             l('md-merge-includes'),
                             l('md-resolve-heading-anchor', o(['supportGithubAnchors'])),
+                            l('md-info-title')
                         ]),
                         generator: {
                             filename: function(asset: { filename: string }) {
@@ -92,7 +94,7 @@ export default {
 
                                 return toHtml
                                     ? `[path]${base}[name].html`
-                                    : `[path]${base}[name][ext]`;
+                                    : `[path][name][ext]`;
                             }
                         }
                     }

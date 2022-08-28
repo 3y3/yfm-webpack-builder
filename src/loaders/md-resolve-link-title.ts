@@ -2,7 +2,7 @@ import type { Link, Text } from 'mdast';
 import { selectAll } from './utils/unist';
 import { definitions } from './utils/mdast';
 import { toLocalLink } from '../utils';
-import { asyncAstLoader, loadModule } from './utils';
+import { asyncAstLoader, loadModuleMeta } from './utils';
 
 export default asyncAstLoader(async function({ ast }) {
     const defs = definitions(ast);
@@ -20,9 +20,13 @@ export default asyncAstLoader(async function({ ast }) {
         }, [] as [ string, Text ][]);
 
     await Promise.all(titles.map(async ([ url, node ]) => {
-        const info = await loadModule(this, url + '?info', JSON.parse);
+        const info = await loadModuleMeta(this, url + '?info');
 
-        node.value = info.title;
+        if ('title' in info) {
+            node.value = info.title;
+        } else {
+            this.emitWarning(new Error('Unable to resolve link title'));
+        }
     }));
 
     return ast;

@@ -1,6 +1,6 @@
 import { selectAll, getData } from './utils/unist';
 import { Item } from './utils/tocst';
-import { asyncAstLoader, emitFile } from './utils';
+import { asyncAstLoader, emitFile, loadModule } from './utils';
 // import { resolve } from "path";
 import { LoaderContext } from 'webpack';
 import { toLocalLink } from '../utils';
@@ -18,9 +18,9 @@ import { toLocalLink } from '../utils';
 // }
 
 async function emitModule(ctx: LoaderContext<any>, path: string) {
-    // const source = await loadModule(ctx, path);
+    const source = await loadModule(ctx, path);
 
-    await emitFile(ctx, path, '');
+    await emitFile(ctx, path, source);
 }
 
 export default asyncAstLoader(async function({ ast }) {
