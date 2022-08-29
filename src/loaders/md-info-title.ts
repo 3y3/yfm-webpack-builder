@@ -1,30 +1,34 @@
 import type { Root, Text } from 'mdast';
-// import { basename, dirname } from 'path';
+import type { Include } from './utils/mdast';
 import { select } from './utils/unist';
 import { title } from './utils/mdast';
-import { asyncAstLoader } from './utils';
+import { asyncAstLoader, loadModuleJson } from './utils';
+import { parseQuery, withQuery } from '../utils';
 
-// function significantName(path: string) {
-//     const name = basename(path);
-//     const dir = basename(dirname(path));
-//
-//     if (name.match(/^index\..*?$/)) {
-//         return dir;
-//     } else {
-//         return name;
-//     }
-// }
+const Initial = Symbol('Initial');
 
 export default asyncAstLoader<{}, Root>(async function({ ast, meta }) {
+    const { include, info } = parseQuery(this.resourceQuery);
     const node = select<Text>('text', title(ast));
 
-    if (!node) {
-        this.emitWarning(new Error('Missing document title for ' + this.resourcePath));
+    let value: string | symbol = Initial;
 
-        // return { title: significantName(this.resourcePath) };
+    if (node) {
+        value = node.value;
     } else {
-        meta.title = node.value;
+        const include = select<Include>(':root > include:first-child', ast);
+
+        // There is no H1 in fragment
+        if (include && !include.fragment) {
+            const info = await loadModuleJson(this, withQuery(include.path, { info: true }));
+
+            value = info.title;
+        }
     }
 
-    return node?.value || '';
-});
+    if (!value && !include && !info) {
+        this.emitWarning(new Error('Missing document title for ' + this.resourcePath));
+    } else if (value !== Initial) {
+        meta.title = value;
+    }
+}, 'meta.title');

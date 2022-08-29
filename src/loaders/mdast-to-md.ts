@@ -5,4 +5,4 @@ export default asyncAstLoader(async function({ compiler }) {
     compiler.use(remarkStringify, {
         handlers: compiler.handlers.mdast
     });
-});
+}, 'md-to-md');

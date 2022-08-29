@@ -31,7 +31,7 @@ export default asyncAstLoader(async function({ ast }) {
         const data = getData(item);
         const link = toLocalLink(data.href, this.context, this.rootContext);
 
-        console.log(data.href, this.context, this.rootContext);
+        // console.log(data.href, link);
 
         if (link && link.match(/\.md$/)) {
             await emitModule(this, link);

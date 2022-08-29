@@ -47,4 +47,9 @@ export type Text = Literal<string>;
 
 export type Item = Parent<Item | Include, Exclude<TocItem, [ 'include', 'items' ]>>;
 
-export type Include = Node<TocInclude>;
+export interface Include extends Node {
+    type: 'include',
+    repo: string;
+    path: string;
+    mode?: IncludeMode;
+}

@@ -1,9 +1,10 @@
 import type { Include } from './utils/tocst';
 import type { Parent } from 'unist';
-import { visit, SKIP, selectAll, getData } from './utils/unist';
+import { visit, SKIP, selectAll } from './utils/unist';
 import { IncludeMode } from './utils/tocst';
 import { asyncAstLoader, loadModuleAst } from './utils';
 import { dirname, relative, resolve } from 'path';
+import { withQuery } from '../utils';
 
 export default asyncAstLoader(async function({ ast }) {
     const includes: [ string, string, Parent ][] = [];
@@ -12,7 +13,7 @@ export default asyncAstLoader(async function({ ast }) {
         const base = resolveBase(node, this.context, this.rootContext);
 
         parent?.children.splice(index, 1);
-        includes.push([ base, getData(node).path, parent as Parent ]);
+        includes.push([ base, node.path, parent as Parent ]);
 
         return SKIP;
     });
@@ -27,7 +28,7 @@ export default asyncAstLoader(async function({ ast }) {
 });
 
 function resolveBase(include: Include, context: string, root: string) {
-    const { path, mode = IncludeMode.ROOT_MERGE } = getData(include);
+    const { path, mode = IncludeMode.ROOT_MERGE } = include;
 
     let base = '';
     switch (mode) {
@@ -43,7 +44,5 @@ function resolveBase(include: Include, context: string, root: string) {
 }
 
 function resolvePath(path: string, context: string, base: string) {
-    const query = base ? '?' + JSON.stringify({ base }) : '';
-
-    return resolve(context, path) + query;
+    return withQuery(resolve(context, path), { base, include: true });
 }

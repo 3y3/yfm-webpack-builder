@@ -4,7 +4,7 @@ import pvisit, { EXIT, CONTINUE, SKIP } from 'unist-util-visit-parents';
 import { select as _select, selectAll as _selectAll } from 'unist-util-select';
 import { isArray, isObject } from '../../../utils';
 
-export { visit, EXIT, CONTINUE, SKIP };
+export { visit, pvisit, EXIT, CONTINUE, SKIP };
 
 export type LinkedNode = Node & {
     parent: Parent

@@ -5,7 +5,7 @@ import type { Handle as MdastHandler, Handlers as MdastHandlers } from 'mdast-ut
 import type { Handler as HastHandler, Handlers as HastHandlers } from 'mdast-util-to-hast';
 import unified from 'unified';
 import { resolve, relative } from 'path';
-import { isEmpty, isObject, isArray } from '../../utils';
+import { isEmpty, isObject, isArray, isString, toLocalLink } from '../../utils';
 import { isNode } from './unist';
 
 const Ast = Symbol('Ast');
@@ -21,6 +21,10 @@ const hidden = (box: Record<symbol | string, any>, key: symbol, ...args: any[]) 
     }
 };
 
+export const getAst = (box: Record<symbol | string, any>) => hidden(box, Ast);
+
+export const getMeta = (box: Record<symbol | string, any>) => hidden(box, Meta);
+
 export async function exists(ctx: LoaderContext<any>, path: string) {
     return new Promise((resolve) => {
         ctx.fs.stat(path, (error, stat) => {
@@ -35,7 +39,13 @@ export function loadModule<T = string>(
     parse: (content: any, map: any, module: NormalModule) => T = (content: T) => content
 ): Promise<T> {
     return new Promise((resolve, reject) => {
-        ctx.loadModule(path, (error, content, map, module) => {
+        const securePath = toLocalLink(path, ctx.context, ctx.rootContext);
+
+        if (!securePath) {
+            throw new TypeError(`Attempt acces to out of project scope resource! (${ path })`);
+        }
+
+        ctx.loadModule(securePath, (error, content, map, module) => {
             if (error) {
                 return reject(error);
             }
@@ -49,8 +59,16 @@ export function loadModuleAst<T extends Node = Node>(
     ctx: LoaderContext<any>,
     path: string
 ): Promise<T> {
-    return loadModule<T>(ctx, path, (_content: any, _map: any, module: NormalModule) => {
-        return hidden(module, Ast) as T;
+    return loadModule<T>(ctx, path, (content: string, _map: any, module: NormalModule) => {
+        let ast = getAst(module) as T;
+
+        // If module loaded from cache, there is no attached ast.
+        // So we parse saved ast from content.
+        if (!ast) {
+            ast = JSON.parse(content);
+        }
+
+        return ast;
     });
 }
 
@@ -58,9 +76,14 @@ export function loadModuleMeta<T extends Record<string | symbol, any>>(
     ctx: LoaderContext<any>,
     path: string
 ): Promise<T> {
-    return loadModule<T>(ctx, path, (_content: any, _map: any, module: NormalModule) => {
-        return hidden(module, Meta) as T;
-    });
+    return loadModule<T>(ctx, path, (_content: any, _map: any, module: NormalModule) => getMeta(module) as T);
+}
+
+export function loadModuleJson<T extends Record<string | symbol, any>>(
+    ctx: LoaderContext<any>,
+    path: string
+): Promise<T> {
+    return loadModule<T>(ctx, path, JSON.parse);
 }
 
 type Loader<O = any, T = string> = (
@@ -71,7 +94,7 @@ type Loader<O = any, T = string> = (
 ) => Promise<any> | any;
 
 export function asyncLoader<O = any, T = string>(loader: Loader<O, T>) {
-    return async function(this: LoaderContext<O>, content: T, map?: any, meta?: Record<string, any>) {
+    return async function(this: LoaderContext<O>, content: T, map?: any, meta?: Record<string | symbol, any>) {
         const callback = this.async();
 
         meta = meta || {};
@@ -85,6 +108,7 @@ export function asyncLoader<O = any, T = string>(loader: Loader<O, T>) {
                 callback(null, result);
             }
         } catch (error) {
+            console.error(error);
             callback(error as Error);
         }
     }
@@ -104,34 +128,42 @@ type AstLoaderCallback<Options, Result, AtsRoot = Node> = (
 
 export function asyncAstLoader<Options extends Record<string, any> = any,
     AtsRoot extends Node = Node,
-    Result = any>(loader: AstLoaderCallback<Options, Result, AtsRoot>) {
+    Result = any>(loader: AstLoaderCallback<Options, Result, AtsRoot>, _displayName?: string) {
     return asyncLoader(async function(content, _map: any, meta) {
+        const module = this._module as NormalModule;
+
         meta = meta || {};
 
-        let ast = meta[Ast];
-        const parser = meta[Parser] || withHandlers(unified());
-        const compiler = meta[Compiler] || withHandlers(unified());
+        let ast = hidden(meta, Ast);
+
+        const parser = hidden(meta, Parser) || withHandlers(unified());
+        const compiler = hidden(meta, Compiler) || withHandlers(unified());
         const processor = unified();
 
+        // console.log('Run', _displayName, 'on', this.resource);
         const result = await loader.call(this, { content, ast, meta, parser, compiler, processor });
 
         ast = isNode(result) ? result : ast;
 
-        hidden(this._module as NormalModule, Ast, ast);
-        hidden(this._module as NormalModule, Meta, meta);
-        hidden(meta, Ast, ast);
-        hidden(meta, Parser, parser);
-        hidden(meta, Compiler, compiler);
+        hidden(module, Ast, ast);
+        hidden(module, Meta, meta);
 
         if (this.loaderIndex === 0) {
+            hidden(meta, Ast, undefined);
+            hidden(meta, Parser, undefined);
+            hidden(meta, Compiler, undefined);
+
             content = isEmpty(result) || isNode(result)
                 ? compiler.stringify(await compiler.run(ast))
                 : isObject(result)
                     ? JSON.stringify(result)
                     : String(result);
         } else {
-            // For best caching we return string content in common case
-            content = isEmpty(result) ? content : String(result);
+            hidden(meta, Ast, ast);
+            hidden(meta, Parser, parser);
+            hidden(meta, Compiler, compiler);
+
+            content = isString(result) ? result : content;
         }
 
         return [ content, null, meta ];
@@ -147,7 +179,6 @@ export type ExtendableProcessor = Processor & {
 };
 
 export type Leaf = {
-    (...args: any[]): Node;
     type: string;
     hast: HastHandler;
     mdast: MdastHandler;

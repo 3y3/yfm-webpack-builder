@@ -34,8 +34,27 @@ export class PageProcessor {
     apply(compiler: Compiler) {
         this.modules.apply(compiler);
 
-        const tocs = glob.sync('**/toc.yaml', { cwd: compiler.options.context, nodir: true });
+        const projects: string[] = [
+            // 'api-design-guide',
+            // 'api-gateway',
+            // 'application-load-balancer',
+            // 'audit-trails',
+            // 'billing',
+            // 'cdn',
+            // 'certificate-manager',
+            // 'cli',
+            // 'cloud-desktop',
+            // 'compute',
+        ];
 
+        const serch = projects.length
+            ? `./ru/@(${projects.join('|')})/**/toc.yaml`
+            : `./**/toc.yaml`
+
+        const tocs = glob.sync(serch, { cwd: compiler.options.context, nodir: true });
+
+        console.log(tocs);
+        
         const entries = tocs.reduce((entries, toc) => {
             const dir = dirname(toc);
             const entry = './' + join(dir, 'page');
@@ -44,8 +63,6 @@ export class PageProcessor {
 
             return entries;
         }, {} as Record<string, any>);
-
-        console.log(entries);
 
         compiler.hooks.environment.tap(this.name, () => {
             Object.assign(compiler.options.entry, entries);

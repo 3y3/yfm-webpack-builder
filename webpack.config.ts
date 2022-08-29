@@ -3,10 +3,10 @@ import { TocProcessor } from './src/plugins/TocProcessor';
 import { PageProcessor } from './src/plugins/PageProcessor';
 import { pick } from "lodash";
 import { parseQuery } from "./src/utils";
-import { Configuration } from "webpack";
+import { Configuration, RuleSetRule } from "webpack";
 
 const options = {
-    input: '../docs',
+    input: './docs',
     outputFormat: 'md',
     ignoreStage: 'test',
     applyPresets: true,
@@ -31,6 +31,36 @@ const l = (loader: string, options?: Record<string, any>) => ({
 
 const o = (props: string[]) => pick(options, props);
 
+const use = (loaders: (boolean | ReturnType<typeof l>)[], type = 'asset/resource') => ({
+    type: type,
+    use: useful(loaders)
+});
+
+const oneOf = (rules: (boolean | RuleSetRule)[]) => ({
+    oneOf: useful(rules)
+});
+
+const rules = (rules: (boolean | RuleSetRule)[], rest = {}) => ({
+    rules: useful(rules),
+    ...rest
+});
+
+const defaults = use;
+const allways = use;
+
+const queried = (modifier: string, loaders: (boolean | ReturnType<typeof l>)[], type = 'json') => ({
+    resourceQuery: new RegExp(`[?&]${modifier}=`),
+    ...use(loaders, type)
+});
+
+const handleBase = function(asset: { filename: string }) {
+    const { base = '' } = parseQuery(asset.filename.split('?')[1]);
+
+    return toHtml
+        ? `[path]${base}[name].html`
+        : `[path][name][ext]`;
+};
+
 export default {
     mode: 'production',
     context: resolve(process.cwd(), options.input),
@@ -49,55 +79,61 @@ export default {
     resolveLoader: {
         extensions: [ '.ts', '.js', '.json' ]
     },
-    cache: false,
-    // cache: {
-    //     type: 'filesystem',
-    //     compression: false,
-    //     profile: true,
-    //     cacheDirectory: resolve(__dirname, '.temp_cache'),
-    // },
+    // cache: false,
+    cache: {
+        type: 'filesystem',
+        compression: false,
+        profile: true,
+        cacheDirectory: resolve(__dirname, '.temp_cache'),
+    },
     module: {
         rules: [
             {
                 test: /\.md$/,
-                enforce: 'pre',
-                use: useful([
-                    l('md-ast'),
-                    l('mdast-image-size'),
-                    applyPresets && l('liquid-loader', {
-                        conditions: false,
-                        substitutions: true,
-                    })
-                ])
-            },
-            {
-                test: /\.md$/,
-                type: 'asset/resource',
-                oneOf: [
-                    {
-                        resourceQuery: /info/,
-                        use: l('md-info-title'),
-                    },
-                    {
-                        use: useful([
-                            toHtml && l('md-to-html'),
-                            toMd && l('md-to-md'),
-                            l('md-resolve-link-title'),
-                            l('md-handle-assets'),
-                            l('md-merge-includes'),
-                            l('md-resolve-heading-anchor', o(['supportGithubAnchors'])),
-                            l('md-info-title')
+                rules: [
+                    oneOf([
+                        queried('info', [
+                            l('meta-to-json'),
                         ]),
-                        generator: {
-                            filename: function(asset: { filename: string }) {
-                                const { base = '' } = parseQuery(asset.filename.split('?')[1]);
-
-                                return toHtml
-                                    ? `[path]${base}[name].html`
-                                    : `[path][name][ext]`;
+                        rules([
+                            oneOf([
+                                queried('include', [
+                                    l('ast-to-json'),
+                                ]),
+                                defaults([
+                                    toHtml && l('mdast-to-html'),
+                                    toMd && l('mdast-to-md'),
+                                ])
+                            ]),
+                            allways([
+                                l('md-resolve-link-title'),
+                                l('md-handle-assets'),
+                                l('md-includes/merge'),
+                                l('md-heading-anchors/generate', o(['supportGithubAnchors'])),
+                            ])
+                        ], {
+                            generator: {
+                                filename: handleBase
                             }
-                        }
-                    }
+                        }),
+                    ]),
+                    queried('fragment', [
+                        l('md-extract-fragment'),
+                    ]),
+                    allways([
+                        l('md-info-title'),
+                        l('md-info-refs'),
+                        l('md-info-meta'),
+                        l('md-includes/parse'),
+                        l('md-heading-anchors/parse'),
+                        l('md-ast'),
+                        l('mdast-frontmatter'),
+                        // l('mdast-image-size'),
+                        applyPresets && l('liquid-loader', {
+                            conditions: false,
+                            substitutions: true,
+                        })
+                    ]),
                 ]
             },
             // {
@@ -118,26 +154,32 @@ export default {
             },
             {
                 test: /\.yaml$/,
-                type: toHtml ? 'javascript/auto' : 'asset/resource',
                 exclude: [
                     /presets\.yaml$/,
                 ],
-                // type: 'asset/resource',
-                use: useful([
-                    toHtml && l('toc-to-js'),
-                    toHtml && l('toc-normalize-hrefs'),
-                    toMd && l('toc-to-yaml'),
-                    l('toc-merge-includes'),
-                    toMd && l('toc-resolve-hrefs'),
-                    l('toc-resolve-conditions'),
-                    removeHiddenItems && l('toc-drop-hidden-items'),
-                    l('toc-ast'),
-                    applyPresets && l('liquid-loader', {
-                        conditions: false,
-                        substitutions: true,
-                    })
-                ])
-
+                rules: [
+                    oneOf([
+                        queried('include', [
+                            l('ast-to-json'),
+                        ]),
+                        defaults([
+                            toHtml && l('toc-to-js'),
+                            toMd && l('toc-to-yaml'),
+                        ], toHtml ? 'javascript/auto' : 'asset/resource')
+                    ]),
+                    use([
+                        toHtml && l('toc-normalize-hrefs'),
+                        l('toc-merge-includes'),
+                        toMd && l('toc-resolve-hrefs'),
+                        l('toc-resolve-conditions'),
+                        removeHiddenItems && l('toc-drop-hidden-items'),
+                        l('toc-ast'),
+                        applyPresets && l('liquid-loader', {
+                            conditions: false,
+                            substitutions: true,
+                        })
+                    ])
+                ],
 
                 // use: useful([
                 //     l('toc-loader', o([ 'ignoreStage' ])),

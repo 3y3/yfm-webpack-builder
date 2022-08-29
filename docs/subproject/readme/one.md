@@ -1,0 +1,1 @@
+{% include [Gateway](../../api/gateway/index.md) %}

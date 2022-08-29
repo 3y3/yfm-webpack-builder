@@ -7,4 +7,4 @@ export default asyncAstLoader(async function({ compiler }) {
         handlers: compiler.handlers.hast
     });
     compiler.use(compileHtml);
-});
+}, 'md-to-html');

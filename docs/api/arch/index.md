@@ -1,3 +1,8 @@
+---
+test: value
+other: value
+---
+
 # Arch {{ lang }}
 There header must be with overriden local lang.
 
