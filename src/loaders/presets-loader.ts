@@ -18,7 +18,7 @@ export default asyncLoader<PresetsLoaderOptions, Content>(async function(content
     const options = this.getOptions();
     const { vars = {}, varsPreset = 'default' } = options;
 
-    const parent = await resolvePresets(dirname(this.context), this.rootContext, '', this);
+    const parent = await resolvePresets(dirname(this.context), '', this);
 
     return {
         ...parent,

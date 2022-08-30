@@ -42,7 +42,7 @@ export function loadModule<T = string>(
         const securePath = toLocalLink(path, ctx.context, ctx.rootContext);
 
         if (!securePath) {
-            throw new TypeError(`Attempt acces to out of project scope resource! (${ path })`);
+            throw new TypeError(`Attempt access to out of project scope resource! (${ path }) in context (${ ctx.context })`);
         }
 
         ctx.loadModule(securePath, (error, content, map, module) => {
@@ -108,7 +108,6 @@ export function asyncLoader<O = any, T = string>(loader: Loader<O, T>) {
                 callback(null, result);
             }
         } catch (error) {
-            console.error(error);
             callback(error as Error);
         }
     }

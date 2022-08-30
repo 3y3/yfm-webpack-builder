@@ -3,7 +3,6 @@ import type { Context } from '../';
 import { all } from '../all';
 import { omit } from 'lodash';
 import { Nullable, Toc, TocItem, TocItemsHolder } from '../../types';
-import assert from 'assert';
 
 export function root(t: Context, node: Root) {
     const holder = {
@@ -15,8 +14,6 @@ export function root(t: Context, node: Root) {
     all(t, node, holder);
 
     const result = clean(holder);
-
-    assert(result.href, 'Missing required root prop `href`');
 
     return result;
 }

@@ -1,9 +1,11 @@
 import type { Node, Parent, Data } from 'unist';
+import type { Visitor } from 'unist-util-visit';
 import visit from 'unist-util-visit';
 import pvisit, { EXIT, CONTINUE, SKIP } from 'unist-util-visit-parents';
 import { select as _select, selectAll as _selectAll } from 'unist-util-select';
 import { isArray, isObject } from '../../../utils';
 
+export type { Visitor };
 export { visit, pvisit, EXIT, CONTINUE, SKIP };
 
 export type LinkedNode = Node & {

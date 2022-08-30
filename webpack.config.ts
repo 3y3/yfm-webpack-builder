@@ -55,7 +55,7 @@ export default {
         type: 'filesystem',
         compression: false,
         profile: true,
-        cacheDirectory: resolve(__dirname, '.temp_cache'),
+        cacheDirectory: resolve(__dirname, '.cache'),
     },
     module: {
         rules: [
@@ -146,8 +146,8 @@ export default {
                     ]),
                     // first
                     use([
-                        toHtml && l('toc-normalize-hrefs'),
                         l('toc-merge-includes'),
+                        toHtml && l('toc-normalize-hrefs'),
                         toMd && l('toc-resolve-hrefs'),
                         l('toc-resolve-conditions'),
                         removeHiddenItems && l('toc-drop-hidden-items'),

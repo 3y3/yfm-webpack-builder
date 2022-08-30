@@ -12,7 +12,8 @@ const extract = (object: Record<string, any>, field: string) => {
 };
 
 export default asyncAstLoader(async function({ ast }) {
-    const vars = await resolvePresets(this.context, this.rootContext, '', this);
+    // TODO: collect required vars
+    const vars = await resolvePresets(this.context, '', this);
 
     visit(ast, (node, index, parent) => {
         if (parent && 'when' in node) {

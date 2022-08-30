@@ -22,6 +22,8 @@ async function handleAsset(ctx: LoaderContext<any>, path: string) {
 
 export default asyncAstLoader(async function({ ast }) {
     // Protect circular refs
+    // TODO: store in _compilation
+    // TODO: write abstract helpers getModule, getCompilation instead of direct access to context._module
     processed.add(this.resourcePath);
 
     const defs = definitions(ast);
@@ -32,11 +34,11 @@ export default asyncAstLoader(async function({ ast }) {
 
             if (url) {
                 node.url = url;
-                acc.push(node);
+                acc.push(url);
             }
 
             return acc;
-        }, [] as (Image | Link)[]);
+        }, [] as string[]);
 
-    await Promise.all(assets.map((node) => handleAsset(this, node.url)));
+    await Promise.all(assets.map((url) => handleAsset(this, url)));
 }, 'handle-assets');

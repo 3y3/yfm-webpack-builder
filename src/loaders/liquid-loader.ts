@@ -103,11 +103,10 @@ export default asyncLoader<{}, string>(async function(content) {
         }, new Set()));
 
         const query = '?' + JSON.stringify({ deps });
-        const vars = await resolvePresets(this.context, this.rootContext, query, this);
+        const vars = await resolvePresets(this.context, query, this);
 
         return liquid.render(templates, vars);
     } catch (error) {
-        console.error(error);
         throw error;
     }
 });

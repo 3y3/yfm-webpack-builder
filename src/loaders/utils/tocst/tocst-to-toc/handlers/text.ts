@@ -7,7 +7,7 @@ export function text(_t: Context, node: Text, parent: TocTitleHolder): TocTitleT
     const holder = omit(node, [ 'type', 'data', 'position' ]);
     const keys = Object.keys(holder);
 
-    assert(node.value, 'Missed text value.');
+    assert('value' in node, 'Missed text value.');
 
     let result: TocTitleText;
     if (keys.length === 1) {
