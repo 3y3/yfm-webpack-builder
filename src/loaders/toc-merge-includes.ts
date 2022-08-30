@@ -1,29 +1,38 @@
-import type { Include } from './utils/tocst';
+import type { Include, Item } from './utils/tocst';
 import type { Parent } from 'unist';
-import { visit, SKIP, selectAll } from './utils/unist';
+import { pvisit, SKIP, selectAll } from './utils/unist';
 import { IncludeMode } from './utils/tocst';
 import { asyncAstLoader, loadModuleAst } from './utils';
 import { dirname, relative, resolve } from 'path';
 import { withQuery } from '../utils';
 
 export default asyncAstLoader(async function({ ast }) {
-    const includes: [ string, string, Parent ][] = [];
+    const includes: [ Include, Item, Parent | undefined ][] = [];
 
-    visit<Include>(ast, 'include', (node, index, parent) => {
-        const base = resolveBase(node, this.context, this.rootContext);
+    pvisit<Include>(ast, 'include', (node, parents) => {
+        const item = parents[parents.length - 1] as Item;
+        const parent = parents[parents.length - 2] as Item | undefined;
 
-        parent?.children.splice(index, 1);
-        includes.push([ base, node.path, parent as Parent ]);
+        includes.push([ node, item, parent ]);
 
         return SKIP;
     });
 
-    await Promise.all(includes.map(async ([ base, path, parent ]) => {
-        const module = await loadModuleAst(this, resolvePath(path, this.context, base));
+    await Promise.all(includes.map(async ([ include, item, parent ]) => {
+        const base = resolveBase(include, this.context, this.rootContext);
+        const module = await loadModuleAst(this, resolvePath(include.path, this.context, base));
 
-        const items = selectAll(':root > item', module);
+        const items = selectAll<Item>(':root > item', module);
 
-        parent.children.push(...items);
+        if (item.name) {
+            const index = item.children.indexOf(include);
+            item.children.splice(index, 1, ...items);
+        } else if (parent) {
+            const index = parent.children.indexOf(item);
+            parent.children.splice(index, 1, ...items);
+        } else {
+            throw new TypeError('Unresolved tocst condition.');
+        }
     }));
 });
 

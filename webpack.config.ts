@@ -106,9 +106,9 @@ export default {
                                 ])
                             ]),
                             allways([
+                                l('md-includes/merge'),
                                 l('md-resolve-link-title'),
                                 l('md-handle-assets'),
-                                l('md-includes/merge'),
                                 l('md-heading-anchors/generate', o(['supportGithubAnchors'])),
                             ])
                         ], {

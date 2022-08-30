@@ -1,4 +1,4 @@
-import { selectAll, getData } from './utils/unist';
+import { selectAll } from './utils/unist';
 import { Item } from './utils/tocst';
 import { asyncAstLoader, emitFile, loadModule } from './utils';
 // import { resolve } from "path";
@@ -28,14 +28,15 @@ export default asyncAstLoader(async function({ ast }) {
     const items = selectAll<Item>('item[href]', ast);
 
     for (const item of items) {
-        const data = getData(item);
-        const link = toLocalLink(data.href, this.context, this.rootContext);
+        if (item.href) {
+            const link = toLocalLink(item.href, this.context, this.rootContext);
 
-        // console.log(data.href, link);
+            // console.log(data.href, link);
 
-        if (link && link.match(/\.md$/)) {
-            await emitModule(this, link);
-            // data.href = resolvePath(data.href, this.context, options.base);
+            if (link && link.match(/\.md$/)) {
+                await emitModule(this, link);
+                // data.href = resolvePath(data.href, this.context, options.base);
+            }
         }
     }
 });

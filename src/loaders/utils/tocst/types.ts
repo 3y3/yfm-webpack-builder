@@ -1,5 +1,9 @@
 import type { Node, Parent, Literal } from 'unist';
 
+export type Nullable<T extends Record<string, any>> = {
+    [key in keyof T]?: T[key] | null | undefined;
+}
+
 export enum Stage {
     NEW = 'new',
     PREVIEW = 'preview',
@@ -9,23 +13,36 @@ export enum Stage {
 
 export type Toc = {
     href: string;
+    items?: TocItem[];
     stage?: Stage;
     base?: string;
-    items: TocItem[];
-    title?: string | TocTitle | (string | TocTitle)[];
-}
+    title?: TocTitleText | TocTitleText[];
+};
 
-export type TocTitle = {
-    text: string
-}
+export type TocTitleText = string | {
+    text: string;
+    [prop: string]: string;
+};
 
-export type TocItem = {
+export type TocTitleHolder = {
+    text: (string | TocTitleText)[];
+};
+
+export type TocItem = ({
     name: string;
     href: string;
-    items: TocItem[];
     include?: TocInclude;
+} | {
+    name?: string;
+    include: TocInclude;
+}) & {
     id?: string;
-}
+    items?: TocItem[];
+};
+
+export type TocItemsHolder = {
+    items: TocItem[];
+};
 
 export enum IncludeMode {
     ROOT_MERGE = 'root_merge',
@@ -34,22 +51,36 @@ export enum IncludeMode {
 }
 
 export type TocInclude = {
-    repo: string;
     path: string;
+    repo?: string;
     mode?: IncludeMode;
 }
 
-export type Root = Parent<Title | Item, Exclude<Toc, [ 'items', 'title' ]>>;
+export interface Root extends Parent<Title | Item> {
+    href: string;
+    stage?: Stage;
+    base?: string;
+}
 
-export type Title = Parent<Text>;
+export interface Title extends Parent<Text> {
+    type: 'title';
+}
 
-export type Text = Literal<string>;
+export interface Text extends Literal<string> {
+    type: 'text';
+}
 
-export type Item = Parent<Item | Include, Exclude<TocItem, [ 'include', 'items' ]>>;
+export interface Item extends Parent {
+    type: 'item';
+    href?: string;
+    name?: string;
+    id?: string;
+    children: (Item | Include)[];
+}
 
 export interface Include extends Node {
-    type: 'include',
-    repo: string;
+    type: 'include';
     path: string;
+    repo?: string;
     mode?: IncludeMode;
 }

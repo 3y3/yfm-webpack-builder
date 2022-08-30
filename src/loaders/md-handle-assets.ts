@@ -39,6 +39,4 @@ export default asyncAstLoader(async function({ ast }) {
         }, [] as (Image | Link)[]);
 
     await Promise.all(assets.map((node) => handleAsset(this, node.url)));
-
-    return ast;
-});
+}, 'handle-assets');

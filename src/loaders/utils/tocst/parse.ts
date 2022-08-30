@@ -1,5 +1,5 @@
 import type { Processor } from 'unified';
-import type { Root, Title, Item, Text, Include, Toc, TocTitle, TocItem, TocInclude } from './types';
+import type { Root, Title, Item, Text, Include, Toc, TocTitleText, TocItem, TocInclude } from './types';
 import { IncludeMode } from './types';
 import u from 'unist-builder';
 import { omit } from 'lodash';
@@ -35,7 +35,7 @@ function title(node: Toc): Title {
     ]);
 }
 
-function text(value: string | TocTitle | (string | TocTitle)[]): Text | Text[] {
+function text(value: TocTitleText | TocTitleText[]): Text | Text[] {
     if (typeof value === 'string') {
         return u('text', value);
     } else if (isArray(value)) {
