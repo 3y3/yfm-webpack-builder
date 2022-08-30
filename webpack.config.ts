@@ -1,11 +1,10 @@
+import type { Configuration } from "webpack";
 import { resolve } from 'path';
 import { TocProcessor } from './src/plugins/TocProcessor';
 import { PageProcessor } from './src/plugins/PageProcessor';
-import { pick } from "lodash";
-import { parseQuery } from "./src/utils";
-import { Configuration, RuleSetRule } from "webpack";
+import { parseQuery, loader, options, use, defaults, queried, allways, rules, oneOf, useful } from "./src/utils";
 
-const options = {
+const __options = {
     input: './docs',
     outputFormat: 'md',
     ignoreStage: 'test',
@@ -17,41 +16,13 @@ const options = {
     }
 };
 
-const toHtml = options.outputFormat === 'html';
-const toMd = options.outputFormat === 'md';
-const removeHiddenItems = options.removeHiddenItems;
-const applyPresets = true || options.outputFormat !== 'md' || options.applyPresets;
+const l = loader(__dirname, 'src/loaders');
+const o = options(__options);
 
-const useful = <T>(array: (T | boolean)[]): T[] => array.filter(Boolean) as T[];
-
-const l = (loader: string, options?: Record<string, any>) => ({
-    loader: resolve(__dirname, 'src/loaders', loader),
-    options: options || {}
-});
-
-const o = (props: string[]) => pick(options, props);
-
-const use = (loaders: (boolean | ReturnType<typeof l>)[], type = 'asset/resource') => ({
-    type: type,
-    use: useful(loaders)
-});
-
-const oneOf = (rules: (boolean | RuleSetRule)[]) => ({
-    oneOf: useful(rules)
-});
-
-const rules = (rules: (boolean | RuleSetRule)[], rest = {}) => ({
-    rules: useful(rules),
-    ...rest
-});
-
-const defaults = use;
-const allways = use;
-
-const queried = (modifier: string, loaders: (boolean | ReturnType<typeof l>)[], type = 'json') => ({
-    resourceQuery: new RegExp(`[?&]${modifier}=`),
-    ...use(loaders, type)
-});
+const toHtml = __options.outputFormat === 'html';
+const toMd = __options.outputFormat === 'md';
+const removeHiddenItems = __options.removeHiddenItems;
+const applyPresets = true || __options.outputFormat !== 'md' || __options.applyPresets;
 
 const handleBase = function(asset: { filename: string }) {
     const { base = '' } = parseQuery(asset.filename.split('?')[1]);
@@ -63,7 +34,7 @@ const handleBase = function(asset: { filename: string }) {
 
 export default {
     mode: 'production',
-    context: resolve(process.cwd(), options.input),
+    context: resolve(process.cwd(), __options.input),
     entry: {},
     output: {
         assetModuleFilename: function(_path) {
@@ -95,11 +66,13 @@ export default {
                         queried('info', [
                             l('meta-to-json'),
                         ]),
+                        // or
                         rules([
                             oneOf([
                                 queried('include', [
                                     l('ast-to-json'),
                                 ]),
+                                // or
                                 defaults([
                                     toHtml && l('mdast-to-html'),
                                     toMd && l('mdast-to-md'),
@@ -117,9 +90,11 @@ export default {
                             }
                         }),
                     ]),
+                    // and
                     queried('fragment', [
                         l('md-extract-fragment'),
                     ]),
+                    // first
                     allways([
                         l('md-info-title'),
                         l('md-info-refs'),
@@ -158,15 +133,18 @@ export default {
                     /presets\.yaml$/,
                 ],
                 rules: [
+                    // then
                     oneOf([
                         queried('include', [
                             l('ast-to-json'),
                         ]),
+                        // or
                         defaults([
                             toHtml && l('toc-to-js'),
                             toMd && l('toc-to-yaml'),
                         ], toHtml ? 'javascript/auto' : 'asset/resource')
                     ]),
+                    // first
                     use([
                         toHtml && l('toc-normalize-hrefs'),
                         l('toc-merge-includes'),
