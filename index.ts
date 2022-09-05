@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import { readFile, readFileSync, stat} from 'fs';
-import { runLoaders, VFile } from '../webpack-transformer/src/core';
-import { include } from '../webpack-transformer/src/include';
+import { runLoaders, VFile } from '../yfm-loader-runner/src/core';
+import { include } from '../yfm-loader-runner/src/include';
 import { options } from './src/utils';
 
 const l = async (loader: string, options?: Record<string, any>) => ([
